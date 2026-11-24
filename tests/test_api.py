@@ -1,5 +1,6 @@
 """Tests for FastAPI endpoints."""
 import io
+import uuid
 import zipfile
 import pytest
 from httpx import ASGITransport, AsyncClient
