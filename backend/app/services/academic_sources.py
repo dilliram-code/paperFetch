@@ -303,3 +303,90 @@ async def fetch_unpaywall_metadata(doi: str) -> Optional[Dict[str, Any]]:
     except Exception as e:
         logger.warning(f"Error fetching Unpaywall metadata for {doi}: {e}")
         return None
+
+
+async def search_paper_by_title(title_query: str) -> Optional[Dict[str, Any]]:
+    """
+    Search academic databases (OpenAlex and Crossref) by paper title.
+    Used as an intelligent fallback when academic profile pages (e.g. ResearchGate,
+    Academia.edu, SSRN) block direct web scraping or lack direct PDF links.
+    """
+    if not title_query or len(title_query.strip()) < 8:
+        return None
+
+    clean_query = title_query.strip()
+    from backend.app.services.duplicate_detector import titles_are_similar
+    from backend.app.services.doi_resolver import resolve_doi
+
+    # 1. Search OpenAlex
+    try:
+        headers = {
+            **DEFAULT_HEADERS,
+            "User-Agent": f"PaperFetch/{settings.VERSION} (mailto:{settings.OPENALEX_EMAIL})",
+        }
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+            resp = await client.get(
+                "https://api.openalex.org/works",
+                params={"search": clean_query, "per_page": 3},
+                headers=headers,
+            )
+            if resp.status_code == 200:
+                results = resp.json().get("results", [])
+                for item in results:
+                    candidate_title = item.get("title")
+                    if candidate_title and titles_are_similar(candidate_title, clean_query, threshold=0.65):
+                        doi = item.get("doi")
+                        if doi:
+                            clean_doi = doi.replace("https://doi.org/", "").replace("http://doi.org/", "").strip()
+                            resolved = await resolve_doi(clean_doi)
+                            if resolved:
+                                return resolved
+
+                        # Build from OpenAlex if DOI resolution was incomplete
+                        pdf_url = item.get("open_access", {}).get("oa_url") or item.get("primary_location", {}).get("pdf_url")
+                        authors = [
+                            a.get("author", {}).get("display_name")
+                            for a in item.get("authorships", [])
+                            if a.get("author", {}).get("display_name")
+                        ]
+                        return {
+                            "title": candidate_title,
+                            "authors": authors,
+                            "first_author": authors[0] if authors else None,
+                            "year": item.get("publication_year"),
+                            "doi": item.get("doi"),
+                            "journal_or_conference": (item.get("primary_location") or {}).get("source", {}).get("display_name"),
+                            "pdf_url": pdf_url,
+                            "access_type": "open_access" if pdf_url else "unknown",
+                            "metadata_source": "openalex_search",
+                        }
+    except Exception as e:
+        logger.warning(f"OpenAlex title search failed for '{clean_query}': {e}")
+
+    # 2. Search Crossref
+    try:
+        headers = {
+            **DEFAULT_HEADERS,
+            "User-Agent": f"PaperFetch/{settings.VERSION} (mailto:{settings.CROSSREF_MAILTO})",
+        }
+        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
+            resp = await client.get(
+                "https://api.crossref.org/works",
+                params={"query.bibliographic": clean_query, "rows": 3},
+                headers=headers,
+            )
+            if resp.status_code == 200:
+                items = resp.json().get("message", {}).get("items", [])
+                for it in items:
+                    titles = it.get("title", [])
+                    candidate_title = titles[0] if titles else None
+                    if candidate_title and titles_are_similar(candidate_title, clean_query, threshold=0.65):
+                        doi = it.get("DOI")
+                        if doi:
+                            resolved = await resolve_doi(doi)
+                            if resolved:
+                                return resolved
+    except Exception as e:
+        logger.warning(f"Crossref title search failed for '{clean_query}': {e}")
+
+    return None

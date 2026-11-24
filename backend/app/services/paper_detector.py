@@ -22,6 +22,7 @@ from backend.app.utils.url_validator import (
     classify_input,
     extract_arxiv_id,
     extract_doi,
+    extract_title_from_url,
 )
 
 logger = logging.getLogger(__name__)
