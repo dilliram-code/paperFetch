@@ -3,8 +3,8 @@ services:
     name: paperfetch
     env: python
     region: oregon
-    plan: starter
-    buildCommand: pip install -r backend/requirements.txt
+    plan: free
+    buildCommand: pip install -r requirements.txt
     startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
@@ -18,8 +18,7 @@ services:
       - key: MAX_BATCH_SIZE
         value: 10
       - key: MAX_CONCURRENT_DOWNLOADS
-        value: 5
-    disk:
-      name: paperfetch-storage
-      mountPath: /opt/render/project/src/storage
-      sizeGB: 10
+        value: 10
+      - key: CHUNK_SIZE_BYTES
+        value: 262144
+
