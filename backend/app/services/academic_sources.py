@@ -16,66 +16,106 @@ DEFAULT_HEADERS = {
 
 
 async def fetch_arxiv_metadata(arxiv_id: str) -> Optional[Dict[str, Any]]:
-    """Query the official arXiv API for paper metadata."""
+    """
+    Resolve arXiv paper metadata with multi-tier cascading strategy:
+    1. Direct abstract page HTML parse (fast Highwire Press tags in ~1s)
+    2. Academic DOI resolution (Crossref / OpenAlex for 10.48550/arXiv.{id})
+    3. Official export.arxiv.org XML API (as fallback)
+    """
     clean_id = arxiv_id.strip()
-    api_url = f"https://export.arxiv.org/api/query?id_list={clean_id}"
+    if clean_id.lower().startswith("arxiv:"):
+        clean_id = clean_id[6:].strip()
 
+    doi = f"10.48550/arXiv.{clean_id}"
+    abs_url = f"https://arxiv.org/abs/{clean_id}"
+    pdf_url = f"https://arxiv.org/pdf/{clean_id}.pdf"
+
+    result: Dict[str, Any] = {
+        "title": None,
+        "authors": [],
+        "first_author": None,
+        "year": None,
+        "doi": doi,
+        "journal_or_conference": "arXiv Preprint",
+        "publisher": "arXiv",
+        "abstract": None,
+        "original_url": abs_url,
+        "pdf_url": pdf_url,
+        "access_type": "open_access",
+        "metadata_source": "arxiv",
+    }
+
+    # 1. Fetch arXiv abstract webpage (very fast and reliable)
+    from backend.app.services.metadata_extractor import extract_from_webpage
     try:
-        async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
-            resp = await client.get(api_url, headers={"User-Agent": DEFAULT_HEADERS["User-Agent"]})
-            if resp.status_code != 200:
-                return None
-
-            root = ET.fromstring(resp.text)
-            ns = {
-                "atom": "http://www.w3.org/2005/Atom",
-                "arxiv": "http://arxiv.org/schemas/atom",
-            }
-            entry = root.find("atom:entry", ns)
-            if entry is None:
-                return None
-
-            title_elem = entry.find("atom:title", ns)
-            title = title_elem.text.strip().replace("\n", " ") if title_elem is not None and title_elem.text else "Untitled"
-
-            summary_elem = entry.find("atom:summary", ns)
-            abstract = summary_elem.text.strip() if summary_elem is not None and summary_elem.text else None
-
-            published_elem = entry.find("atom:published", ns)
-            year = int(published_elem.text[:4]) if published_elem is not None and published_elem.text else None
-
-            authors = []
-            for author_node in entry.findall("atom:author", ns):
-                name_node = author_node.find("atom:name", ns)
-                if name_node is not None and name_node.text:
-                    authors.append(name_node.text.strip())
-
-            doi_elem = entry.find("arxiv:doi", ns)
-            doi = doi_elem.text.strip() if doi_elem is not None and doi_elem.text else None
-
-            journal_elem = entry.find("arxiv:journal_ref", ns)
-            journal = journal_elem.text.strip() if journal_elem is not None and journal_elem.text else "arXiv Preprint"
-
-            # Direct PDF url for arXiv
-            pdf_url = f"https://arxiv.org/pdf/{clean_id}.pdf"
-
-            return {
-                "title": title,
-                "authors": authors,
-                "first_author": authors[0] if authors else None,
-                "year": year,
-                "doi": doi or f"10.48550/arXiv.{clean_id}",
-                "journal_or_conference": journal,
-                "publisher": "arXiv",
-                "abstract": abstract,
-                "original_url": f"https://arxiv.org/abs/{clean_id}",
-                "pdf_url": pdf_url,
-                "access_type": "open_access",
-                "metadata_source": "arxiv",
-            }
+        web_meta = await extract_from_webpage(abs_url)
+        if web_meta:
+            if web_meta.get("title") and "untitled" not in web_meta["title"].lower():
+                result["title"] = web_meta["title"]
+            if web_meta.get("authors"):
+                result["authors"] = web_meta["authors"]
+                result["first_author"] = web_meta.get("first_author")
+            if web_meta.get("year"):
+                result["year"] = web_meta["year"]
+            if web_meta.get("abstract"):
+                result["abstract"] = web_meta["abstract"]
     except Exception as e:
-        logger.warning(f"Error fetching arXiv metadata for {arxiv_id}: {e}")
-        return None
+        logger.warning(f"Error scraping arXiv webpage for {clean_id}: {e}")
+
+    # 2. Query DOI resolver (Crossref / OpenAlex) for the arXiv DOI
+    from backend.app.services.doi_resolver import resolve_doi
+    try:
+        doi_meta = await resolve_doi(doi)
+        if doi_meta:
+            if (not result["title"] or "untitled" in result["title"].lower()) and doi_meta.get("title"):
+                result["title"] = doi_meta["title"]
+            if (not result["authors"] or len(result["authors"]) == 0) and doi_meta.get("authors"):
+                result["authors"] = doi_meta["authors"]
+                result["first_author"] = doi_meta.get("first_author")
+            if not result["year"] and doi_meta.get("year"):
+                result["year"] = doi_meta["year"]
+            if not result["abstract"] and doi_meta.get("abstract"):
+                result["abstract"] = doi_meta["abstract"]
+            if doi_meta.get("journal_or_conference") and doi_meta["journal_or_conference"] != "arXiv":
+                result["journal_or_conference"] = doi_meta["journal_or_conference"]
+    except Exception as e:
+        logger.warning(f"Error resolving arXiv DOI {doi}: {e}")
+
+    # 3. Fallback to export.arxiv.org XML API if title is still missing
+    if not result["title"] or "untitled" in result["title"].lower():
+        api_url = f"https://export.arxiv.org/api/query?id_list={clean_id}"
+        try:
+            async with httpx.AsyncClient(timeout=5.0, follow_redirects=True) as client:
+                resp = await client.get(api_url, headers={"User-Agent": DEFAULT_HEADERS["User-Agent"]})
+                if resp.status_code == 200:
+                    root = ET.fromstring(resp.text)
+                    ns = {"atom": "http://www.w3.org/2005/Atom", "arxiv": "http://arxiv.org/schemas/atom"}
+                    entry = root.find("atom:entry", ns)
+                    if entry is not None:
+                        t_elem = entry.find("atom:title", ns)
+                        if t_elem is not None and t_elem.text:
+                            result["title"] = t_elem.text.strip().replace("\n", " ")
+                        sum_elem = entry.find("atom:summary", ns)
+                        if sum_elem is not None and sum_elem.text and not result["abstract"]:
+                            result["abstract"] = sum_elem.text.strip()
+                        pub_elem = entry.find("atom:published", ns)
+                        if pub_elem is not None and pub_elem.text and not result["year"]:
+                            result["year"] = int(pub_elem.text[:4])
+                        if not result["authors"]:
+                            for a_node in entry.findall("atom:author", ns):
+                                n_node = a_node.find("atom:name", ns)
+                                if n_node is not None and n_node.text:
+                                    result["authors"].append(n_node.text.strip())
+        except Exception as e:
+            logger.warning(f"Error fetching from export.arxiv.org for {clean_id}: {e}")
+
+    if not result["title"]:
+        result["title"] = f"arXiv:{clean_id}"
+
+    if result["authors"] and not result["first_author"]:
+        result["first_author"] = result["authors"][0]
+
+    return result
 
 
 async def fetch_crossref_metadata(doi: str) -> Optional[Dict[str, Any]]:

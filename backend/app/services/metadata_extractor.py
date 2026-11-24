@@ -153,6 +153,15 @@ def parse_html_metadata(html_content: str, base_url: str) -> Dict[str, Any]:
         except Exception:
             pass
 
+    # Abstract HTML block fallback (e.g. arXiv blockquote.abstract)
+    if not result["abstract"]:
+        abs_block = soup.find("blockquote", class_=re.compile(r"abstract", re.I))
+        if abs_block:
+            abs_text = abs_block.get_text().strip()
+            if abs_text.lower().startswith("abstract:"):
+                abs_text = abs_text[9:].strip()
+            result["abstract"] = abs_text
+
     # 4. OpenGraph fallbacks
     if not result["title"]:
         og_title = soup.find("meta", attrs={"property": "og:title"})

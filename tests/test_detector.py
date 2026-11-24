@@ -24,11 +24,20 @@ def test_extract_arxiv_id():
     assert extract_arxiv_id("https://arxiv.org/abs/2301.12345") == "2301.12345"
     assert extract_arxiv_id("https://arxiv.org/pdf/2301.12345.pdf") == "2301.12345"
     assert extract_arxiv_id("arXiv:2106.09685v2") == "2106.09685v2"
+    assert extract_arxiv_id("https://arxiv.org/abs/2608.26449") == "2608.26449"
+    assert extract_arxiv_id("https://arxiv.org/pdf/2608.26449") == "2608.26449"
+    assert extract_arxiv_id("https://arxiv.org/html/2608.26449v1") == "2608.26449v1"
+    assert extract_arxiv_id("https://doi.org/10.48550/arXiv.2608.26449") == "2608.26449"
+    assert extract_arxiv_id("10.48550/arXiv.2608.26449") == "2608.26449"
+    assert extract_arxiv_id("2608.26449") == "2608.26449"
 
 
 def test_classify_input():
     assert classify_input("10.1038/nature1234")[0] == "doi"
     assert classify_input("https://arxiv.org/abs/2301.12345")[0] == "arxiv"
+    assert classify_input("https://arxiv.org/abs/2608.26449")[0] == "arxiv"
+    assert classify_input("https://doi.org/10.48550/arXiv.2608.26449")[0] == "arxiv"
+    assert classify_input("2608.26449")[0] == "arxiv"
     assert classify_input("https://example.com/papers/paper.pdf")[0] == "direct_pdf"
     assert classify_input("https://nature.com/articles/s41586-023")[0] == "webpage"
 

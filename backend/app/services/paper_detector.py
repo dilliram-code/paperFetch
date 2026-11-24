@@ -31,6 +31,11 @@ async def check_pdf_accessibility(pdf_url: Optional[str]) -> bool:
     """Check whether a PDF URL is publicly accessible without full download."""
     if not pdf_url:
         return False
+
+    # arXiv PDFs are guaranteed to be publicly accessible
+    if "arxiv.org/pdf/" in pdf_url.lower():
+        return True
+
     try:
         validate_target_url(pdf_url)
         headers = {
