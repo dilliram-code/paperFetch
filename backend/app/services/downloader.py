@@ -232,6 +232,13 @@ async def download_pdf_stream(
                             if progress_callback:
                                 progress_callback(downloaded_bytes, total_bytes, speed, eta)
 
+                if html_redirect_url:
+                    url = html_redirect_url
+                    retries += 1
+                    if part_path.exists():
+                        part_path.unlink(missing_ok=True)
+                    continue
+
                 # Finished streaming current response successfully
                 file_hash = sha256.hexdigest()
                 break
