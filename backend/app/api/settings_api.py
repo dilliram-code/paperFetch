@@ -9,6 +9,7 @@ from backend.app.database import get_db
 from backend.app.models import AppSetting
 from backend.app.schemas import SettingsResponse, SettingsUpdate
 from backend.app.services.job_manager import job_manager
+from backend.app.services.storage_cleaner import flush_storage_if_needed, get_current_storage_usage
 
 router = APIRouter(prefix="/api/settings", tags=["Settings"])
 
@@ -56,3 +57,16 @@ async def update_settings(update_data: SettingsUpdate, db: AsyncSession = Depend
 
     await db.commit()
     return await get_settings(db)
+
+
+@router.get("/storage-stats")
+async def get_storage_stats():
+    """Get real-time storage disk usage statistics."""
+    return get_current_storage_usage()
+
+
+@router.post("/flush-storage")
+async def trigger_storage_flush():
+    """Manually trigger storage cleanup and return updated usage statistics."""
+    return await flush_storage_if_needed(force_flush=True)
+

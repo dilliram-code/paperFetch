@@ -21,4 +21,13 @@ services:
         value: 10
       - key: CHUNK_SIZE_BYTES
         value: 262144
+      - key: MAX_STORAGE_MB
+        value: 500
+      - key: AUTO_FLUSH_INTERVAL_MINUTES
+        value: 30
+      - key: STORAGE_RETENTION_HOURS
+        value: 24
+      - key: AUTO_CLEANUP_ENABLED
+        value: true
+
 

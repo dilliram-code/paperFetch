@@ -34,6 +34,12 @@ class Settings(BaseSettings):
     MAX_FILE_SIZE_MB: int = 200
     CHUNK_SIZE_BYTES: int = 262144  # 256 KB high-speed streaming buffer
 
+    # Render Free Tier Storage Quota & Auto-Flush
+    MAX_STORAGE_MB: int = 500  # Cap storage at 500 MB for Render Free Tier
+    AUTO_FLUSH_INTERVAL_MINUTES: int = 30  # Run periodic flush every 30 minutes
+    STORAGE_RETENTION_HOURS: int = 24  # Flush files older than 24 hours if storage is near cap
+    AUTO_CLEANUP_ENABLED: bool = True  # Enable automatic background cleanup
+
     # Default Preferences
     DEFAULT_FILENAME_PATTERN: str = "{year}_{first_author}_{title}"
     DUPLICATE_ACTION: str = "warn"  # "warn", "skip", "overwrite"

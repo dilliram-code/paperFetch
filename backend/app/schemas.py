@@ -138,3 +138,4 @@ class HealthResponse(BaseModel):
     environment: str
     storage_ok: bool
     db_ok: bool
+    storage_usage: Optional[Dict[str, Any]] = None

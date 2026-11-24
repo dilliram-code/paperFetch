@@ -2,7 +2,7 @@
 from pathlib import Path
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -149,14 +149,21 @@ async def update_paper_metadata(paper_id: str, update_data: PaperUpdate, db: Asy
 
 @router.get("/{paper_id}/download")
 async def download_paper_pdf(paper_id: str, db: AsyncSession = Depends(get_db)):
-    """Serve the local PDF file with standardized academic filename."""
+    """Serve the local PDF file with standardized academic filename, or redirect to source if flushed."""
     res = await db.execute(select(Paper).where(Paper.id == paper_id))
     paper = res.scalars().first()
-    if not paper or not paper.local_path:
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    if not paper.local_path:
+        if paper.pdf_url:
+            return RedirectResponse(url=paper.pdf_url)
         raise HTTPException(status_code=404, detail="Paper PDF not found or not yet downloaded")
 
     pdf_path = Path(paper.local_path)
     if not pdf_path.exists():
+        if paper.pdf_url:
+            return RedirectResponse(url=paper.pdf_url)
         raise HTTPException(status_code=404, detail="Physical PDF file missing on disk")
 
     return FileResponse(

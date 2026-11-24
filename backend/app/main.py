@@ -15,6 +15,11 @@ from backend.app.config import settings
 from backend.app.database import init_db
 from backend.app.schemas import HealthResponse
 from backend.app.services.downloader import close_download_client
+from backend.app.services.storage_cleaner import (
+    get_current_storage_usage,
+    start_storage_cleaner_task,
+    stop_storage_cleaner_task,
+)
 
 
 @asynccontextmanager
@@ -22,8 +27,11 @@ async def lifespan(app: FastAPI):
     # Startup: ensure directories and database tables exist
     settings.setup_directories()
     await init_db()
+    # Start automated background storage flush worker
+    start_storage_cleaner_task()
     yield
     # Shutdown logic
+    stop_storage_cleaner_task()
     await close_download_client()
 
 
@@ -61,6 +69,7 @@ async def health_check():
         environment=settings.ENVIRONMENT,
         storage_ok=storage_ok,
         db_ok=True,
+        storage_usage=get_current_storage_usage(),
     )
 
 
