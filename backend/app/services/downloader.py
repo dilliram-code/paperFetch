@@ -3,10 +3,13 @@ import asyncio
 import hashlib
 import logging
 import os
+import re
 import time
 from pathlib import Path
 from typing import Callable, Optional, Tuple
+from urllib.parse import urljoin
 import aiofiles
+from bs4 import BeautifulSoup
 import httpx
 
 from backend.app.config import settings

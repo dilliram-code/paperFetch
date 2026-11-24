@@ -229,14 +229,17 @@ async def fetch_openalex_metadata(doi: str) -> Optional[Dict[str, Any]]:
             if source:
                 journal = source.get("display_name")
 
+            best_oa = data.get("best_oa_location") or {}
             open_access = data.get("open_access", {})
             is_oa = open_access.get("is_oa", False)
-            pdf_url = open_access.get("oa_url") or primary_loc.get("pdf_url")
-
-            # Check best_oa_location if still no pdf
-            if not pdf_url:
-                best_oa = data.get("best_oa_location") or {}
-                pdf_url = best_oa.get("pdf_url")
+            # Prioritize direct PDF URLs over generic article landing pages
+            pdf_url = (
+                best_oa.get("pdf_url")
+                or primary_loc.get("pdf_url")
+                or (open_access.get("oa_url") if open_access.get("oa_url", "").lower().endswith(".pdf") else None)
+                or best_oa.get("landing_page_url")
+                or open_access.get("oa_url")
+            )
 
             return {
                 "title": title,
@@ -276,7 +279,11 @@ async def fetch_unpaywall_metadata(doi: str) -> Optional[Dict[str, Any]]:
             is_oa = data.get("is_oa", False)
 
             best_oa = data.get("best_oa_location") or {}
-            pdf_url = best_oa.get("url_for_pdf") or best_oa.get("url")
+            pdf_url = (
+                best_oa.get("url_for_pdf")
+                or (best_oa.get("url") if best_oa.get("url", "").lower().endswith(".pdf") else None)
+                or best_oa.get("url")
+            )
 
             authors = []
             for z_author in data.get("z_authors", []):
@@ -343,7 +350,16 @@ async def search_paper_by_title(title_query: str) -> Optional[Dict[str, Any]]:
                                 return resolved
 
                         # Build from OpenAlex if DOI resolution was incomplete
-                        pdf_url = item.get("open_access", {}).get("oa_url") or item.get("primary_location", {}).get("pdf_url")
+                        best_oa = item.get("best_oa_location") or {}
+                        primary_loc = item.get("primary_location") or {}
+                        open_access = item.get("open_access", {})
+                        pdf_url = (
+                            best_oa.get("pdf_url")
+                            or primary_loc.get("pdf_url")
+                            or (open_access.get("oa_url") if open_access.get("oa_url", "").lower().endswith(".pdf") else None)
+                            or best_oa.get("landing_page_url")
+                            or open_access.get("oa_url")
+                        )
                         authors = [
                             a.get("author", {}).get("display_name")
                             for a in item.get("authorships", [])
