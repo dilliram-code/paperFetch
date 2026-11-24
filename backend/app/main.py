@@ -14,6 +14,7 @@ from backend.app.api.settings_api import router as settings_router
 from backend.app.config import settings
 from backend.app.database import init_db
 from backend.app.schemas import HealthResponse
+from backend.app.services.downloader import close_download_client
 
 
 @asynccontextmanager
@@ -22,7 +23,8 @@ async def lifespan(app: FastAPI):
     settings.setup_directories()
     await init_db()
     yield
-    # Shutdown logic if any
+    # Shutdown logic
+    await close_download_client()
 
 
 app = FastAPI(

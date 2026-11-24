@@ -125,6 +125,51 @@ async function cancelAllActiveJobs() {
   }
 }
 
+async function downloadCurrentBatchZip() {
+  let batchIds = window.currentBatchPaperIds || [];
+  if (!batchIds || batchIds.length === 0) {
+    try {
+      const stored = sessionStorage.getItem('currentBatchPaperIds');
+      if (stored) batchIds = JSON.parse(stored);
+    } catch (e) {}
+  }
+
+  if (!batchIds || batchIds.length === 0) {
+    showToast('No active batch detected. Please paste URLs to detect and download papers first.', 'warning');
+    return;
+  }
+
+  showToast('Preparing Batch ZIP for current papers...', 'info');
+
+  try {
+    const query = batchIds.map((id) => `paper_ids=${encodeURIComponent(id)}`).join('&');
+    const resp = await fetch(`/api/downloads/zip?${query}`);
+
+    if (!resp.ok) {
+      let errorMsg = 'Failed to download batch ZIP';
+      try {
+        const errJson = await resp.json();
+        errorMsg = errJson.detail || errorMsg;
+      } catch (e) {}
+      showToast(errorMsg, 'warning');
+      return;
+    }
+
+    const blob = await resp.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = 'PaperFetch_Batch.zip';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(blobUrl);
+    showToast('Batch ZIP downloaded successfully!', 'success');
+  } catch (err) {
+    showToast(`Error downloading ZIP: ${err.message}`, 'danger');
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   initSSEProgress();
 
@@ -135,8 +180,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
   const btnDownloadZip = document.getElementById('btn-download-zip');
   if (btnDownloadZip) {
-    btnDownloadZip.addEventListener('click', () => {
-      window.location.href = '/api/downloads/zip';
+    btnDownloadZip.addEventListener('click', downloadCurrentBatchZip);
+  }
+
+  const topBtnZip = document.getElementById('top-btn-zip');
+  if (topBtnZip) {
+    topBtnZip.addEventListener('click', (e) => {
+      e.preventDefault();
+      downloadCurrentBatchZip();
     });
   }
 });

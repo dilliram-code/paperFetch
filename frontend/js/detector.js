@@ -41,6 +41,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (previewSection) previewSection.style.display = 'none';
       detectedPapers = [];
       selectedPaperIds.clear();
+      window.currentBatchPaperIds = [];
+      sessionStorage.removeItem('currentBatchPaperIds');
     });
   }
 
@@ -70,6 +72,8 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedPaperIds = new Set(
           detectedPapers.filter((p) => p.pdf_accessible).map((p) => p.id)
         );
+        window.currentBatchPaperIds = detectedPapers.map((p) => p.id);
+        sessionStorage.setItem('currentBatchPaperIds', JSON.stringify(window.currentBatchPaperIds));
 
         renderPreviewCards(detectedPapers);
         if (previewSection) previewSection.style.display = 'block';
@@ -171,6 +175,9 @@ document.addEventListener('DOMContentLoaded', () => {
         showToast('Please select at least one paper to download', 'warning');
         return;
       }
+
+      window.currentBatchPaperIds = selectedIds;
+      sessionStorage.setItem('currentBatchPaperIds', JSON.stringify(selectedIds));
 
       btnStartDownload.disabled = true;
       btnStartDownload.innerHTML = '<span class="status-dot"></span> Starting Batch...';

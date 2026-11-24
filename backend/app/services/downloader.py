@@ -84,72 +84,74 @@ async def download_pdf_stream(
             req_headers["Range"] = f"bytes={downloaded_bytes}-"
 
         try:
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(settings.DOWNLOAD_TIMEOUT_SECONDS, connect=15.0),
-                follow_redirects=True,
-                limits=httpx.Limits(max_keepalive_connections=10, max_connections=20),
-            ) as client:
-                async with client.stream("GET", url, headers=req_headers) as resp:
-                    validate_target_url(str(resp.url))
+            client = get_download_client()
+            async with client.stream("GET", url, headers=req_headers) as resp:
+                validate_target_url(str(resp.url))
 
-                    # Check status code
-                    if resp.status_code not in (200, 206):
-                        # If range was not satisfiable, restart from 0
-                        if resp.status_code == 416 and downloaded_bytes > 0:
-                            if part_path.exists():
-                                part_path.unlink()
-                            downloaded_bytes = 0
-                            retries += 1
-                            continue
-                        raise Exception(f"HTTP status {resp.status_code}: {resp.reason_phrase}")
-
-                    # Determine total size
-                    content_length = resp.headers.get("content-length")
-                    total_bytes = 0
-                    if content_length:
-                        try:
-                            if resp.status_code == 206:
-                                total_bytes = downloaded_bytes + int(content_length)
-                            else:
-                                total_bytes = int(content_length)
-                        except ValueError:
-                            total_bytes = 0
-
-                    if total_bytes > max_size_bytes:
-                        raise Exception(f"File size exceeds maximum allowed ({settings.MAX_FILE_SIZE_MB}MB)")
-
-                    # Write mode: append if 206 Partial Content, else overwrite
-                    write_mode = "ab" if resp.status_code == 206 and downloaded_bytes > 0 else "wb"
-                    if write_mode == "wb":
+                # Check status code
+                if resp.status_code not in (200, 206):
+                    # If range was not satisfiable, restart from 0
+                    if resp.status_code == 416 and downloaded_bytes > 0:
+                        if part_path.exists():
+                            part_path.unlink()
                         downloaded_bytes = 0
+                        retries += 1
+                        continue
+                    raise Exception(f"HTTP status {resp.status_code}: {resp.reason_phrase}")
 
-                    sha256 = hashlib.sha256()
+                # Determine total size
+                content_length = resp.headers.get("content-length")
+                total_bytes = 0
+                if content_length:
+                    try:
+                        if resp.status_code == 206:
+                            total_bytes = downloaded_bytes + int(content_length)
+                        else:
+                            total_bytes = int(content_length)
+                    except ValueError:
+                        total_bytes = 0
 
-                    async with aiofiles.open(part_path, write_mode) as f:
-                        async for chunk in resp.aiter_bytes(chunk_size):
-                            if cancel_event and cancel_event.is_set():
-                                raise asyncio.CancelledError()
+                if total_bytes > max_size_bytes:
+                    raise Exception(f"File size exceeds maximum allowed ({settings.MAX_FILE_SIZE_MB}MB)")
 
-                            await f.write(chunk)
-                            downloaded_bytes += len(chunk)
+                # Write mode: append if 206 Partial Content, else overwrite
+                write_mode = "ab" if resp.status_code == 206 and downloaded_bytes > 0 else "wb"
+                if write_mode == "wb":
+                    downloaded_bytes = 0
 
-                            if downloaded_bytes > max_size_bytes:
-                                raise Exception(f"File size exceeded {settings.MAX_FILE_SIZE_MB}MB during download")
+                sha256 = hashlib.sha256()
+                if write_mode == "ab" and part_path.exists():
+                    with open(part_path, "rb") as existing_f:
+                        while prev_chunk := existing_f.read(chunk_size):
+                            sha256.update(prev_chunk)
 
-                            # Calculate speed and ETA
-                            now = time.time()
-                            elapsed = now - last_calc_time
-                            if elapsed >= 0.3 or (total_bytes and downloaded_bytes >= total_bytes):
-                                speed = (downloaded_bytes - last_bytes) / elapsed if elapsed > 0 else 0.0
-                                eta = (total_bytes - downloaded_bytes) / speed if speed > 0 and total_bytes > downloaded_bytes else 0.0
-                                last_calc_time = now
-                                last_bytes = downloaded_bytes
+                async with aiofiles.open(part_path, write_mode) as f:
+                    async for chunk in resp.aiter_bytes(chunk_size):
+                        if cancel_event and cancel_event.is_set():
+                            raise asyncio.CancelledError()
 
-                                if progress_callback:
-                                    progress_callback(downloaded_bytes, total_bytes, speed, eta)
+                        await f.write(chunk)
+                        sha256.update(chunk)
+                        downloaded_bytes += len(chunk)
 
-                    # Finished streaming current response successfully
-                    break
+                        if downloaded_bytes > max_size_bytes:
+                            raise Exception(f"File size exceeded {settings.MAX_FILE_SIZE_MB}MB during download")
+
+                        # Calculate speed and ETA
+                        now = time.time()
+                        elapsed = now - last_calc_time
+                        if elapsed >= 0.35 or (total_bytes and downloaded_bytes >= total_bytes):
+                            speed = (downloaded_bytes - last_bytes) / elapsed if elapsed > 0 else 0.0
+                            eta = (total_bytes - downloaded_bytes) / speed if speed > 0 and total_bytes > downloaded_bytes else 0.0
+                            last_calc_time = now
+                            last_bytes = downloaded_bytes
+
+                            if progress_callback:
+                                progress_callback(downloaded_bytes, total_bytes, speed, eta)
+
+                # Finished streaming current response successfully
+                file_hash = sha256.hexdigest()
+                break
 
         except asyncio.CancelledError:
             if part_path.exists():
@@ -180,12 +182,13 @@ async def download_pdf_stream(
         dest_path.unlink(missing_ok=True)
         return False, f"Downloaded file is not a valid PDF: {val_err}", None, None, 0, 0
 
-    # Compute full SHA-256 hash
-    sha256 = hashlib.sha256()
-    with open(dest_path, "rb") as f:
-        while c := f.read(65536):
-            sha256.update(c)
-    file_hash = sha256.hexdigest()
     file_size = dest_path.stat().st_size
+    if not file_hash:
+        # Fallback in case hash wasn't captured
+        sha256 = hashlib.sha256()
+        with open(dest_path, "rb") as f:
+            while c := f.read(chunk_size):
+                sha256.update(c)
+        file_hash = sha256.hexdigest()
 
     return True, None, dest_path, file_hash, file_size, page_count

@@ -247,12 +247,17 @@ class JobManager:
     async def create_download_jobs(
         self, paper_ids: List[str], db: AsyncSession, force_download: bool = False
     ) -> List[Dict]:
-        """Create and schedule download jobs for specified paper IDs."""
+        """Create and schedule download jobs concurrently for specified paper IDs."""
         jobs_created = []
+        limited_ids = paper_ids[: settings.MAX_BATCH_SIZE]
 
-        for paper_id in paper_ids[: settings.MAX_BATCH_SIZE]:
-            res = await db.execute(select(Paper).where(Paper.id == paper_id))
-            paper = res.scalars().first()
+        # Fetch all requested papers in a single query
+        res = await db.execute(select(Paper).where(Paper.id.in_(limited_ids)))
+        papers_map = {p.id: p for p in res.scalars().all()}
+
+        tasks_to_spawn = []
+        for paper_id in limited_ids:
+            paper = papers_map.get(paper_id)
             if not paper:
                 continue
 
@@ -267,16 +272,18 @@ class JobManager:
                 progress_percent=0.0,
             )
             db.add(new_job)
-            await db.commit()
 
             job_dict = new_job.to_dict()
             job_dict["title"] = paper.title
             job_dict["filename"] = paper.filename
             jobs_created.append(job_dict)
+            tasks_to_spawn.append((job_id, paper.id))
 
-            # Spawn background download worker task
-            task = asyncio.create_task(self.run_download_task(job_id, paper.id))
-            self._active_tasks[job_id] = task
+        if jobs_created:
+            await db.commit()
+            for job_id, pid in tasks_to_spawn:
+                task = asyncio.create_task(self.run_download_task(job_id, pid))
+                self._active_tasks[job_id] = task
 
         return jobs_created
 

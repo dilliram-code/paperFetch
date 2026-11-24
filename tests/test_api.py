@@ -1,7 +1,11 @@
 """Tests for FastAPI endpoints."""
+import io
+import zipfile
 import pytest
 from httpx import ASGITransport, AsyncClient
-from backend.app.database import init_db
+from backend.app.config import settings
+from backend.app.database import AsyncSessionLocal, init_db
+from backend.app.models import Paper
 from backend.app.main import app
 
 

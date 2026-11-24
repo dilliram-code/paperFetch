@@ -1,6 +1,7 @@
 """Download job orchestration, SSE progress streaming, and ZIP bundling."""
 from pathlib import Path
 from typing import List, Optional
+import uuid
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
@@ -107,20 +108,36 @@ async def download_papers_zip(
     db: AsyncSession = Depends(get_db),
 ):
     """
-    Download specified papers (or all completed papers) as a single ZIP archive.
+    Download specified batch papers (or all completed papers) as a single ZIP archive.
+    Supports both repeated query parameters (?paper_ids=a&paper_ids=b) and
+    comma-separated values (?paper_ids=a,b).
     Cleans up temporary ZIP file automatically in background after sending.
     """
-    stmt = select(Paper).where(Paper.status == "completed")
+    target_ids: List[str] = []
     if paper_ids:
-        stmt = stmt.where(Paper.id.in_(paper_ids))
+        for item in paper_ids:
+            for pid in item.split(","):
+                clean_pid = pid.strip()
+                if clean_pid:
+                    target_ids.append(clean_pid)
+
+    stmt = select(Paper).where(Paper.status == "completed")
+    if target_ids:
+        stmt = stmt.where(Paper.id.in_(target_ids))
 
     res = await db.execute(stmt)
     papers = list(res.scalars().all())
 
     if not papers:
+        if target_ids:
+            raise HTTPException(
+                status_code=404,
+                detail="None of the papers in this batch have finished downloading yet.",
+            )
         raise HTTPException(status_code=404, detail="No completed papers found to archive")
 
-    zip_file = create_papers_zip(papers)
+    zip_name = "PaperFetch_Batch.zip" if target_ids else "PaperFetch_Library.zip"
+    zip_file = create_papers_zip(papers, zip_filename=f"{zip_name.lower()}_{uuid.uuid4().hex[:8]}.zip")
     if not zip_file or not zip_file.exists():
         raise HTTPException(status_code=500, detail="Failed to create ZIP archive")
 
@@ -137,5 +154,5 @@ async def download_papers_zip(
     return FileResponse(
         path=zip_file,
         media_type="application/zip",
-        filename="PaperFetch_Batch.zip",
+        filename=zip_name,
     )

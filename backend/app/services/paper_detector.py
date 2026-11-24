@@ -43,10 +43,10 @@ async def check_pdf_accessibility(pdf_url: Optional[str]) -> bool:
             "User-Agent": USER_AGENT,
             "Range": "bytes=0-1023",
         }
-        async with httpx.AsyncClient(timeout=8.0, follow_redirects=True) as client:
-            # Try HEAD first
+        async with httpx.AsyncClient(timeout=httpx.Timeout(5.0, connect=3.0), follow_redirects=True) as client:
+            # Try fast HEAD first (short 1.5s timeout)
             try:
-                head_resp = await client.head(pdf_url, headers=headers)
+                head_resp = await client.head(pdf_url, headers=headers, timeout=1.5)
                 if head_resp.status_code in (200, 206):
                     ct = head_resp.headers.get("content-type", "").lower()
                     if "pdf" in ct or "octet-stream" in ct or pdf_url.lower().endswith(".pdf"):
@@ -54,8 +54,8 @@ async def check_pdf_accessibility(pdf_url: Optional[str]) -> bool:
             except Exception:
                 pass
 
-            # Fallback to GET with Range request
-            get_resp = await client.get(pdf_url, headers=headers)
+            # Fast GET with Range request
+            get_resp = await client.get(pdf_url, headers=headers, timeout=4.0)
             if get_resp.status_code in (200, 206):
                 # Verify magic bytes or content type
                 if get_resp.content.startswith(b"%PDF-") or b"%PDF-" in get_resp.content[:1024]:
