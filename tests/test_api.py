@@ -1,7 +1,13 @@
 """Tests for FastAPI endpoints."""
 import pytest
 from httpx import ASGITransport, AsyncClient
+from backend.app.database import init_db
 from backend.app.main import app
+
+
+@pytest.fixture(autouse=True)
+async def setup_test_db():
+    await init_db()
 
 
 @pytest.mark.asyncio
