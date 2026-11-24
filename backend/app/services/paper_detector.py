@@ -168,9 +168,6 @@ async def detect_single_paper(raw_input: str, db: Optional[AsyncSession] = None)
 
     # If PDF is inaccessible or missing, find legitimate open-access mirror via DOI or title
     if not paper_data.get("pdf_accessible") or not paper_data.get("pdf_url"):
-        from backend.app.services.academic_sources import search_paper_by_title
-        from backend.app.services.doi_resolver import resolve_doi
-
         alt_meta = None
         if paper_data.get("doi"):
             alt_meta = await resolve_doi(paper_data["doi"])
