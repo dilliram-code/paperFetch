@@ -34,14 +34,29 @@ def extract_doi(input_str: str) -> Optional[str]:
 
 
 def extract_arxiv_id(input_str: str) -> Optional[str]:
-    """Extract arXiv ID from URL or raw identifier."""
+    """Extract arXiv ID from URL, DOI, or raw identifier."""
     if not input_str:
         return None
     cleaned = input_str.strip()
-    if "arxiv.org/abs/" in cleaned:
-        cleaned = cleaned.split("arxiv.org/abs/")[-1]
-    elif "arxiv.org/pdf/" in cleaned:
-        cleaned = cleaned.split("arxiv.org/pdf/")[-1].replace(".pdf", "")
+
+    # Handle various arXiv URL patterns and DOI prefixes
+    for prefix in [
+        "arxiv.org/abs/",
+        "arxiv.org/pdf/",
+        "arxiv.org/html/",
+        "arxiv.org/format/",
+        "10.48550/arxiv.",
+        "10.48550/arXiv.",
+    ]:
+        if prefix.lower() in cleaned.lower():
+            idx = cleaned.lower().find(prefix.lower())
+            cleaned = cleaned[idx + len(prefix):]
+            break
+
+    cleaned = cleaned.replace(".pdf", "")
+    if "?" in cleaned:
+        cleaned = cleaned.split("?")[0]
+    cleaned = cleaned.rstrip("/")
     
     match = ARXIV_ID_REGEX.search(cleaned)
     if match:
@@ -56,21 +71,27 @@ def classify_input(input_str: str) -> Tuple[str, str]:
     """
     cleaned = input_str.strip()
 
-    # Check DOI first
+    # Check arXiv first if it's explicitly an arXiv URL, DOI, or identifier
+    arxiv_id = extract_arxiv_id(cleaned)
+    if arxiv_id and (
+        "arxiv.org" in cleaned.lower()
+        or "10.48550/arxiv" in cleaned.lower()
+        or cleaned.lower().startswith("arxiv:")
+        or re.match(r"^\d{4}\.\d{4,5}(v\d+)?$", cleaned)
+    ):
+        return "arxiv", arxiv_id
+
+    # Check DOI
     doi = extract_doi(cleaned)
     if doi and (not cleaned.startswith("http") or "doi.org" in cleaned):
         return "doi", doi
 
-    # Check arXiv
-    arxiv_id = extract_arxiv_id(cleaned)
-    if arxiv_id and ("arxiv.org" in cleaned or cleaned.lower().startswith("arxiv:")):
-        return "arxiv", arxiv_id
-
     # Check if valid URL
     if not cleaned.startswith(("http://", "https://")):
-        # If it matches DOI pattern without scheme
         if doi:
             return "doi", doi
+        if arxiv_id:
+            return "arxiv", arxiv_id
         cleaned = "https://" + cleaned
 
     parsed = urlparse(cleaned)

@@ -74,6 +74,10 @@ def parse_html_metadata(html_content: str, base_url: str) -> Dict[str, Any]:
     if citation_publisher and citation_publisher.get("content"):
         result["publisher"] = citation_publisher["content"].strip()
 
+    citation_abstract = soup.find("meta", attrs={"name": re.compile(r"^citation_abstract$", re.I)})
+    if citation_abstract and citation_abstract.get("content"):
+        result["abstract"] = citation_abstract["content"].strip()
+
     citation_volume = soup.find("meta", attrs={"name": re.compile(r"^citation_volume$", re.I)})
     if citation_volume and citation_volume.get("content"):
         result["volume"] = citation_volume["content"].strip()
