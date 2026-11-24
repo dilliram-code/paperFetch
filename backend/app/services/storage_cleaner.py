@@ -54,7 +54,7 @@ def cleanup_temp_and_orphan_files(max_age_seconds: int = 1800) -> Dict[str, int]
     # Clean storage/temp
     if settings.TEMP_DIR.exists():
         for f in settings.TEMP_DIR.glob("*"):
-            if f.is_file():
+            if f.is_file() and f.name != ".gitkeep":
                 try:
                     if now - f.stat().st_mtime > max_age_seconds:
                         size = f.stat().st_size
