@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/dashboard.css">
   <link rel="stylesheet" href="/static/css/responsive.css">
+  <script>
+    (function() {
+      const theme = localStorage.getItem('paperfetch-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
   <div class="app-container">
@@ -50,6 +56,20 @@
           </a>
         </li>
       </ul>
+
+      <div class="sidebar-footer">
+        <div class="theme-switch-row">
+          <span class="theme-switch-label">Theme</span>
+          <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle Theme" title="Toggle Light/Dark Theme">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            <span>Dark</span>
+          </button>
+        </div>
+        <div class="system-status-indicator">
+          <span class="status-dot"></span>
+          <span>Engine: Operational</span>
+        </div>
+      </div>
     </aside>
 
     <main class="main-wrapper">
@@ -75,7 +95,7 @@
               Maximum Concurrent Downloads (1 to 10)
             </label>
             <input type="number" id="setting-concurrency" min="1" max="10" class="search-input" style="padding-left: 12px; width: 140px;">
-            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">Controls the simultaneous connection semaphore. Default is 5.</div>
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">Controls the simultaneous connection semaphore. Default is 10.</div>
           </div>
 
           <div>
@@ -123,6 +143,20 @@
               <option value="overwrite">Overwrite / Redownload</option>
             </select>
           </div>
+
+          <hr style="border: none; border-top: 1px solid var(--border-glass);">
+
+          <div>
+            <h2 style="font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px;">User Interface Theme</h2>
+            <p style="font-size: 13px; color: var(--text-dim);">Choose between Modern Clean Light Mode and High-Contrast Dark Mode.</p>
+          </div>
+
+          <div>
+            <select id="setting-theme" class="filter-select" style="width: 200px;">
+              <option value="dark">Dark Mode</option>
+              <option value="light">Light Mode</option>
+            </select>
+          </div>
         </div>
       </div>
     </main>
@@ -134,22 +168,30 @@
     async function loadSettings() {
       try {
         const s = await API.getSettings();
-        document.getElementById('setting-concurrency').value = s.max_concurrent_downloads || 5;
+        document.getElementById('setting-concurrency').value = s.max_concurrent_downloads || 10;
         document.getElementById('setting-filename-pattern').value = s.filename_pattern || '{year}_{first_author}_{title}';
         document.getElementById('setting-unpaywall').value = s.unpaywall_email || '';
         document.getElementById('setting-crossref').value = s.crossref_mailto || '';
         document.getElementById('setting-duplicate-action').value = s.duplicate_action || 'warn';
+        const activeTheme = s.theme || getSavedTheme();
+        document.getElementById('setting-theme').value = activeTheme;
+        applyTheme(activeTheme);
       } catch (err) {
         showToast('Failed to load settings: ' + err.message, 'danger');
       }
     }
 
+    document.getElementById('setting-theme').addEventListener('change', (e) => {
+      applyTheme(e.target.value);
+    });
+
     document.getElementById('btn-save-settings').addEventListener('click', async () => {
-      const concurrency = parseInt(document.getElementById('setting-concurrency').value, 10);
+      const concurrency = parseInt(document.getElementById('setting-concurrency').value, 10) || 10;
       const pattern = document.getElementById('setting-filename-pattern').value.trim();
       const unpaywall = document.getElementById('setting-unpaywall').value.trim();
       const crossref = document.getElementById('setting-crossref').value.trim();
       const duplicateAction = document.getElementById('setting-duplicate-action').value;
+      const selectedTheme = document.getElementById('setting-theme').value;
 
       try {
         await API.updateSettings({
@@ -158,7 +200,9 @@
           unpaywall_email: unpaywall,
           crossref_mailto: crossref,
           duplicate_action: duplicateAction,
+          theme: selectedTheme,
         });
+        applyTheme(selectedTheme);
         showToast('Settings saved successfully', 'success');
       } catch (err) {
         showToast('Error saving settings: ' + err.message, 'danger');

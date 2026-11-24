@@ -7,6 +7,12 @@
   <link rel="stylesheet" href="/static/css/style.css">
   <link rel="stylesheet" href="/static/css/dashboard.css">
   <link rel="stylesheet" href="/static/css/responsive.css">
+  <script>
+    (function() {
+      const theme = localStorage.getItem('paperfetch-theme') || 'dark';
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 </head>
 <body>
   <div class="app-container">
@@ -50,6 +56,20 @@
           </a>
         </li>
       </ul>
+
+      <div class="sidebar-footer">
+        <div class="theme-switch-row">
+          <span class="theme-switch-label">Theme</span>
+          <button class="theme-toggle-btn" id="theme-toggle" aria-label="Toggle Theme" title="Toggle Light/Dark Theme">
+            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
+            <span>Dark</span>
+          </button>
+        </div>
+        <div class="system-status-indicator">
+          <span class="status-dot"></span>
+          <span>Engine: Operational</span>
+        </div>
+      </div>
     </aside>
 
     <main class="main-wrapper">

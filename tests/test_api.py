@@ -58,11 +58,14 @@ async def test_settings_get_and_patch():
         assert res.status_code == 200
         data = res.json()
         assert "max_concurrent_downloads" in data
+        assert "theme" in data
 
-        # Patch setting
-        res_patch = await ac.patch("/api/settings", json={"max_concurrent_downloads": 4})
+        # Patch setting concurrency and theme
+        res_patch = await ac.patch("/api/settings", json={"max_concurrent_downloads": 10, "theme": "light"})
         assert res_patch.status_code == 200
-        assert res_patch.json()["max_concurrent_downloads"] == 4
+        patch_data = res_patch.json()
+        assert patch_data["max_concurrent_downloads"] == 10
+        assert patch_data["theme"] == "light"
 
 
 @pytest.mark.asyncio

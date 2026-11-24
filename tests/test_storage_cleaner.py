@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import os
 from pathlib import Path
 import time
+import uuid
 import pytest
 from httpx import ASGITransport, AsyncClient
 
@@ -54,7 +55,7 @@ async def test_cleanup_temp_and_orphan_files(tmp_path):
 
 @pytest.mark.asyncio
 async def test_flush_storage_removes_physical_file_and_preserves_metadata():
-    paper_id = "test_flush_paper_1"
+    paper_id = f"test_flush_{uuid.uuid4().hex[:10]}"
     pdf_filename = f"{paper_id}.pdf"
     pdf_file_path = settings.STORAGE_DIR / pdf_filename
     pdf_file_path.write_bytes(b"%PDF-1.4 sample paper data" * 500)
@@ -101,7 +102,7 @@ async def test_flush_storage_removes_physical_file_and_preserves_metadata():
 
 @pytest.mark.asyncio
 async def test_flushed_paper_download_redirects_to_pdf_url():
-    paper_id = "test_flushed_redirect"
+    paper_id = f"test_flushed_{uuid.uuid4().hex[:10]}"
     async with AsyncSessionLocal() as db:
         paper = Paper(
             id=paper_id,
