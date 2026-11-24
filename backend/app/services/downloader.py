@@ -102,6 +102,48 @@ async def download_pdf_stream(
                         continue
                     raise Exception(f"HTTP status {resp.status_code}: {resp.reason_phrase}")
 
+                # Check if server returned HTML landing page instead of PDF
+                ct = resp.headers.get("content-type", "").lower()
+                if "text/html" in ct:
+                    html_bytes = await resp.aread()
+                    html_text = html_bytes.decode("utf-8", errors="ignore")
+                    soup = BeautifulSoup(html_text, "html.parser")
+
+                    candidate_pdf = None
+                    meta_pdf = soup.find("meta", attrs={"name": re.compile(r"^citation_pdf_url$", re.I)})
+                    if meta_pdf and meta_pdf.get("content"):
+                        candidate_pdf = urljoin(str(resp.url), meta_pdf["content"].strip())
+
+                    if not candidate_pdf:
+                        link_pdf = soup.find("link", attrs={"type": re.compile(r"pdf", re.I)})
+                        if link_pdf and link_pdf.get("href"):
+                            candidate_pdf = urljoin(str(resp.url), link_pdf["href"].strip())
+
+                    if not candidate_pdf:
+                        for a in soup.find_all("a", href=True):
+                            href = a["href"].strip()
+                            t = a.get_text().strip().lower()
+                            if href.lower().endswith(".pdf") or "download pdf" in t or "view pdf" in t:
+                                candidate_pdf = urljoin(str(resp.url), href)
+                                break
+
+                    if candidate_pdf and candidate_pdf != url:
+                        logger.info(f"HTML response resolved to embedded PDF URL: {candidate_pdf}")
+                        url = candidate_pdf
+                        retries += 1
+                        continue
+
+                    if part_path.exists():
+                        part_path.unlink(missing_ok=True)
+                    return (
+                        False,
+                        "Target URL returned an HTML page (paywalled, captcha, or login required) instead of a PDF document",
+                        None,
+                        None,
+                        0,
+                        0,
+                    )
+
                 # Determine total size
                 content_length = resp.headers.get("content-length")
                 total_bytes = 0
@@ -128,10 +170,48 @@ async def download_pdf_stream(
                         while prev_chunk := existing_f.read(chunk_size):
                             sha256.update(prev_chunk)
 
+                first_chunk = True
+                html_redirect_url = None
                 async with aiofiles.open(part_path, write_mode) as f:
                     async for chunk in resp.aiter_bytes(chunk_size):
                         if cancel_event and cancel_event.is_set():
                             raise asyncio.CancelledError()
+
+                        # Check first chunk for raw HTML signatures
+                        if first_chunk and write_mode == "wb":
+                            first_chunk = False
+                            peek = chunk[:1024].lstrip().lower()
+                            if (
+                                peek.startswith((b"<!doctype html", b"<html", b"<?xml", b"<head", b"<body"))
+                                or (b"<html" in peek and b"%pdf-" not in peek)
+                            ):
+                                html_rest = await resp.aread()
+                                full_html = (chunk + html_rest).decode("utf-8", errors="ignore")
+                                soup = BeautifulSoup(full_html, "html.parser")
+                                candidate_pdf = None
+                                meta_pdf = soup.find("meta", attrs={"name": re.compile(r"^citation_pdf_url$", re.I)})
+                                if meta_pdf and meta_pdf.get("content"):
+                                    candidate_pdf = urljoin(str(resp.url), meta_pdf["content"].strip())
+                                if not candidate_pdf:
+                                    for a in soup.find_all("a", href=True):
+                                        href = a["href"].strip()
+                                        t = a.get_text().strip().lower()
+                                        if href.lower().endswith(".pdf") or "download pdf" in t or "view pdf" in t:
+                                            candidate_pdf = urljoin(str(resp.url), href)
+                                            break
+                                if candidate_pdf and candidate_pdf != url:
+                                    html_redirect_url = candidate_pdf
+                                    break
+                                if part_path.exists():
+                                    part_path.unlink(missing_ok=True)
+                                return (
+                                    False,
+                                    "Target URL returned an HTML webpage (paywalled or login required) instead of a PDF document",
+                                    None,
+                                    None,
+                                    0,
+                                    0,
+                                )
 
                         await f.write(chunk)
                         sha256.update(chunk)
