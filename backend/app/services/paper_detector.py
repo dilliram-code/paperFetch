@@ -161,6 +161,34 @@ async def detect_single_paper(raw_input: str, db: Optional[AsyncSession] = None)
         paper_data["pdf_accessible"] = await check_pdf_accessibility(paper_data["pdf_url"])
         if paper_data["pdf_accessible"]:
             paper_data["access_type"] = "open_access"
+        else:
+            logger.info(f"Primary PDF URL is inaccessible ({paper_data['pdf_url']}); searching for open-access mirror...")
+
+    # If PDF is inaccessible or missing, find legitimate open-access mirror via DOI or title
+    if not paper_data.get("pdf_accessible") or not paper_data.get("pdf_url"):
+        from backend.app.services.academic_sources import search_paper_by_title
+        from backend.app.services.doi_resolver import resolve_doi
+
+        alt_meta = None
+        if paper_data.get("doi"):
+            alt_meta = await resolve_doi(paper_data["doi"])
+
+        if not alt_meta or not alt_meta.get("pdf_url"):
+            candidate_title = paper_data.get("title")
+            if not candidate_title or candidate_title == "Untitled Paper":
+                candidate_title = extract_title_from_url(raw_input)
+            if candidate_title and candidate_title != "Untitled Paper":
+                alt_meta = await search_paper_by_title(candidate_title)
+
+        if alt_meta and alt_meta.get("pdf_url"):
+            if await check_pdf_accessibility(alt_meta["pdf_url"]):
+                logger.info(f"Resolved accessible open-access PDF: {alt_meta['pdf_url']}")
+                paper_data["pdf_url"] = alt_meta["pdf_url"]
+                paper_data["pdf_accessible"] = True
+                paper_data["access_type"] = "open_access"
+                for k in ("title", "authors", "first_author", "year", "doi", "journal_or_conference", "publisher"):
+                    if alt_meta.get(k) and (not paper_data.get(k) or paper_data.get(k) == "Untitled Paper"):
+                        paper_data[k] = alt_meta[k]
 
     # Generate standard filename
     paper_data["filename"] = generate_paper_filename(

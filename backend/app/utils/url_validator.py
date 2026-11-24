@@ -67,8 +67,9 @@ def extract_arxiv_id(input_str: str) -> Optional[str]:
 def extract_title_from_url(url: str) -> Optional[str]:
     """
     Extract a potential paper title from an academic URL slug (e.g. ResearchGate, Academia).
+    Handles direct publication pages as well as deep links ending in /download, /link, /pdf, etc.
     Example:
-      https://www.researchgate.net/publication/319164243_Natural_language_processing_state_of_the_art_current_trends_and_challenges
+      https://www.researchgate.net/publication/319164243_Natural_language_processing_state_of_the_art_current_trends_and_challenges/link/5ac0c514aca27222c75a72ad/download
       -> 'Natural language processing state of the art current trends and challenges'
     """
     if not url:
@@ -80,16 +81,31 @@ def extract_title_from_url(url: str) -> Optional[str]:
         parts = [p for p in path.split("/") if p]
         if not parts:
             return None
-        last = parts[-1]
-        # Remove leading ID numbers like 319164243_ or 12345-
-        last = re.sub(r"^\d+[\-_]", "", last)
-        # Remove common web extensions
-        last = re.sub(r"\.(html|htm|php|asp|aspx|pdf)$", "", last, flags=re.I)
-        # Convert separators to spaces
-        clean_title = re.sub(r"[\-_+]+", " ", last).strip()
-        # Only return if it resembles a multi-word paper title (at least 2 words and >= 12 chars)
-        if len(clean_title) >= 12 and " " in clean_title:
-            return clean_title
+
+        # Common non-title path segments in academic URLs to ignore
+        skip_words = {
+            "download", "link", "fulltext", "pdf", "file", "content",
+            "view", "assets", "publication", "publications", "article",
+            "articles", "paper", "papers", "document", "documents", "epdf"
+        }
+
+        # Inspect segments in reverse order (closest content slug first)
+        for part in reversed(parts):
+            if part.lower() in skip_words:
+                continue
+            # Skip hexadecimal hashes (e.g. 5ac0c514aca27222c75a72ad)
+            if re.match(r"^[0-9a-f]{16,64}$", part, re.I):
+                continue
+            # Remove leading ID numbers like 319164243_ or 12345-
+            cleaned_part = re.sub(r"^\d+[\-_]", "", part)
+            # Remove common web/file extensions
+            cleaned_part = re.sub(r"\.(html|htm|php|asp|aspx|pdf)$", "", cleaned_part, flags=re.I)
+            # Convert separators to spaces
+            candidate = re.sub(r"[\-_+]+", " ", cleaned_part).strip()
+            # Only return if it resembles a multi-word paper title (at least 2 words and >= 12 chars)
+            if len(candidate) >= 12 and " " in candidate:
+                return candidate
+
         return None
     except Exception:
         return None
