@@ -133,6 +133,24 @@ async def detect_single_paper(raw_input: str, db: Optional[AsyncSession] = None)
                                 if not paper_data.get(k) and v:
                                     paper_data[k] = v
 
+            # Intelligent academic fallback if scraping was blocked (e.g. ResearchGate/Academia 403) or PDF was not found
+            if not paper_data.get("pdf_url") or not paper_data.get("title") or paper_data.get("title") == "Untitled Paper":
+                from backend.app.services.academic_sources import search_paper_by_title
+                candidate_title = None
+                if paper_data.get("title") and paper_data.get("title") != "Untitled Paper":
+                    candidate_title = paper_data.get("title")
+                else:
+                    candidate_title = extract_title_from_url(target)
+
+                if candidate_title:
+                    searched_meta = await search_paper_by_title(candidate_title)
+                    if searched_meta:
+                        orig = paper_data.get("original_url") or target
+                        for k, v in searched_meta.items():
+                            if v and (not paper_data.get(k) or k in ("pdf_url", "doi", "title", "authors", "year", "journal_or_conference", "publisher", "access_type")):
+                                paper_data[k] = v
+                        paper_data["original_url"] = orig
+
     except Exception as e:
         logger.error(f"Detection failed for input '{raw_input}': {e}")
         paper_data["error"] = str(e)
