@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings — PaperFetch V2</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <link rel="stylesheet" href="/static/css/responsive.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">PaperFetch</div>
+          <span class="brand-tag">v2.0 Pro</span>
+        </div>
+      </div>
+      <ul class="nav-menu">
+        <li>
+          <a href="/" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Download Papers
+          </a>
+        </li>
+        <li>
+          <a href="/library" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            My Library
+          </a>
+        </li>
+        <li>
+          <a href="/history" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Download History
+          </a>
+        </li>
+        <li>
+          <a href="/citations" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+            Citation Studio
+          </a>
+        </li>
+        <li>
+          <a href="/settings" class="nav-link active">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Settings
+          </a>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="main-wrapper">
+      <header class="topbar">
+        <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 class="page-heading">Engine &amp; Application Settings</h1>
+        <div class="topbar-actions">
+          <button class="btn btn-primary btn-sm" id="btn-save-settings">Save Preferences</button>
+        </div>
+      </header>
+
+      <div class="content-body" style="max-width: 800px;">
+        <div class="glass-panel" style="display: flex; flex-direction: column; gap: 24px;">
+          <div>
+            <h2 style="font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px;">Download &amp; Concurrency Engine</h2>
+            <p style="font-size: 13px; color: var(--text-dim);">Configure simultaneous downloads and slow-connection resiliency.</p>
+          </div>
+
+          <div>
+            <label style="font-size: 13px; color: var(--text-main); font-weight: 500; display: block; margin-bottom: 6px;">
+              Maximum Concurrent Downloads (1 to 10)
+            </label>
+            <input type="number" id="setting-concurrency" min="1" max="10" class="search-input" style="padding-left: 12px; width: 140px;">
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">Controls the simultaneous connection semaphore. Default is 5.</div>
+          </div>
+
+          <div>
+            <label style="font-size: 13px; color: var(--text-main); font-weight: 500; display: block; margin-bottom: 6px;">
+              Standard Academic Filename Structure
+            </label>
+            <input type="text" id="setting-filename-pattern" class="search-input" style="padding-left: 12px;" value="{year}_{first_author}_{title}">
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">Pattern used for organizing downloaded PDFs (e.g., <code>2024_Smith_Machine_Learning.pdf</code>).</div>
+          </div>
+
+          <hr style="border: none; border-top: 1px solid var(--border-glass);">
+
+          <div>
+            <h2 style="font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px;">Academic Discovery APIs</h2>
+            <p style="font-size: 13px; color: var(--text-dim);">Polite pool contact credentials for legitimate open-access resolution.</p>
+          </div>
+
+          <div>
+            <label style="font-size: 13px; color: var(--text-main); font-weight: 500; display: block; margin-bottom: 6px;">
+              Unpaywall API Email
+            </label>
+            <input type="email" id="setting-unpaywall" class="search-input" style="padding-left: 12px;">
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">Required by Unpaywall API to query legal open-access repositories.</div>
+          </div>
+
+          <div>
+            <label style="font-size: 13px; color: var(--text-main); font-weight: 500; display: block; margin-bottom: 6px;">
+              Crossref Polite Mailto
+            </label>
+            <input type="email" id="setting-crossref" class="search-input" style="padding-left: 12px;">
+            <div style="font-size: 12px; color: var(--text-dim); margin-top: 4px;">Included in User-Agent header for fast Crossref polite pool access.</div>
+          </div>
+
+          <hr style="border: none; border-top: 1px solid var(--border-glass);">
+
+          <div>
+            <h2 style="font-size: 16px; font-weight: 600; color: #fff; margin-bottom: 4px;">Duplicate Handling</h2>
+            <p style="font-size: 13px; color: var(--text-dim);">Behavior when a submitted DOI or file hash already exists in your library.</p>
+          </div>
+
+          <div>
+            <select id="setting-duplicate-action" class="filter-select" style="width: 200px;">
+              <option value="warn">Warn &amp; Require Confirmation</option>
+              <option value="skip">Automatically Skip</option>
+              <option value="overwrite">Overwrite / Redownload</option>
+            </select>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script>
+    async function loadSettings() {
+      try {
+        const s = await API.getSettings();
+        document.getElementById('setting-concurrency').value = s.max_concurrent_downloads || 5;
+        document.getElementById('setting-filename-pattern').value = s.filename_pattern || '{year}_{first_author}_{title}';
+        document.getElementById('setting-unpaywall').value = s.unpaywall_email || '';
+        document.getElementById('setting-crossref').value = s.crossref_mailto || '';
+        document.getElementById('setting-duplicate-action').value = s.duplicate_action || 'warn';
+      } catch (err) {
+        showToast('Failed to load settings: ' + err.message, 'danger');
+      }
+    }
+
+    document.getElementById('btn-save-settings').addEventListener('click', async () => {
+      const concurrency = parseInt(document.getElementById('setting-concurrency').value, 10);
+      const pattern = document.getElementById('setting-filename-pattern').value.trim();
+      const unpaywall = document.getElementById('setting-unpaywall').value.trim();
+      const crossref = document.getElementById('setting-crossref').value.trim();
+      const duplicateAction = document.getElementById('setting-duplicate-action').value;
+
+      try {
+        await API.updateSettings({
+          max_concurrent_downloads: concurrency,
+          filename_pattern: pattern,
+          unpaywall_email: unpaywall,
+          crossref_mailto: crossref,
+          duplicate_action: duplicateAction,
+        });
+        showToast('Settings saved successfully', 'success');
+      } catch (err) {
+        showToast('Error saving settings: ' + err.message, 'danger');
+      }
+    });
+
+    document.addEventListener('DOMContentLoaded', loadSettings);
+  </script>
+</body>
+</html>
