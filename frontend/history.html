@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download History — PaperFetch V2</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <link rel="stylesheet" href="/static/css/responsive.css">
+</head>
+<body>
+  <div class="app-container">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">PaperFetch</div>
+          <span class="brand-tag">v2.0 Pro</span>
+        </div>
+      </div>
+      <ul class="nav-menu">
+        <li>
+          <a href="/" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Download Papers
+          </a>
+        </li>
+        <li>
+          <a href="/library" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            My Library
+          </a>
+        </li>
+        <li>
+          <a href="/history" class="nav-link active">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Download History
+          </a>
+        </li>
+        <li>
+          <a href="/citations" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+            Citation Studio
+          </a>
+        </li>
+        <li>
+          <a href="/settings" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Settings
+          </a>
+        </li>
+      </ul>
+    </aside>
+
+    <main class="main-wrapper">
+      <header class="topbar">
+        <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 class="page-heading">Download History &amp; Audit Log</h1>
+      </header>
+
+      <div class="content-body">
+        <div class="glass-panel">
+          <div class="table-container">
+            <table class="library-table">
+              <thead>
+                <tr>
+                  <th>Timestamp</th>
+                  <th>Paper Title &amp; Target</th>
+                  <th>Status</th>
+                  <th>Bytes Transferred</th>
+                  <th>Speed</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="history-table-body">
+                <!-- Dynamically loaded -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script>
+    async function loadHistory() {
+      const tbody = document.getElementById('history-table-body');
+      try {
+        const data = await API.getHistory();
+        const records = data.history || [];
+        if (records.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 32px; color: var(--text-dim);">No download history recorded yet.</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = '';
+        records.forEach(r => {
+          const tr = document.createElement('tr');
+          const paper = r.paper || {};
+          const title = paper.title || r.filename || 'Research Paper';
+          const time = r.started_at ? new Date(r.started_at).toLocaleString() : '--';
+          const isDone = r.status === 'completed';
+          const isFail = r.status === 'failed';
+
+          let badge = `<span class="badge badge-info">${escapeHtml(r.status)}</span>`;
+          if (isDone) badge = '<span class="badge badge-success">Completed</span>';
+          else if (isFail) badge = `<span class="badge badge-danger">Failed</span>`;
+
+          tr.innerHTML = `
+            <td style="white-space: nowrap;">${time}</td>
+            <td class="paper-title-cell">
+              <div>${escapeHtml(title)}</div>
+              <div style="font-size: 11px; color: var(--text-dim);">${escapeHtml(paper.doi || paper.filename || '')}</div>
+            </td>
+            <td>${badge}</td>
+            <td>${formatBytes(r.downloaded_bytes || 0)}</td>
+            <td>${r.speed_bytes_per_sec > 0 ? formatBytes(r.speed_bytes_per_sec) + '/s' : '--'}</td>
+            <td>
+              ${isDone && paper.id ? `<a href="/api/papers/${paper.id}/download" download class="btn btn-secondary btn-sm">PDF</a>` : ''}
+              ${isFail ? `<button class="btn btn-secondary btn-sm" onclick="retryJob('${r.id}')">Retry</button>` : ''}
+            </td>
+          `;
+          tbody.appendChild(tr);
+        });
+      } catch (err) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--accent-rose);">${escapeHtml(err.message)}</td></tr>`;
+      }
+    }
+    document.addEventListener('DOMContentLoaded', loadHistory);
+  </script>
+</body>
+</html>
