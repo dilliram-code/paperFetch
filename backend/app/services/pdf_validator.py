@@ -9,8 +9,8 @@ from backend.app.utils.url_validator import DOI_REGEX
 
 
 def is_valid_pdf_bytes(first_bytes: bytes) -> bool:
-    """Check if header bytes contain standard PDF magic signature '%PDF-'."""
-    return first_bytes.startswith(b"%PDF-") or b"%PDF-" in first_bytes[:1024]
+    """Check if bytes contain standard PDF magic signature '%PDF-' anywhere in first 4KB."""
+    return b"%PDF-" in first_bytes[:4096]
 
 
 def validate_pdf_file(file_path: Path) -> Tuple[bool, Optional[str], int, Dict[str, Any]]:
@@ -23,13 +23,30 @@ def validate_pdf_file(file_path: Path) -> Tuple[bool, Optional[str], int, Dict[s
         return False, "File is empty or does not exist", 0, {}
 
     try:
-        # Check magic bytes first
         with open(file_path, "rb") as f:
-            header = f.read(1024)
+            header = f.read(4096)
+
+        header_lower = header[:1024].lower().strip()
+        # Explicitly detect HTML landing or error pages
+        if (
+            header_lower.startswith((b"<!doctype html", b"<html", b"<?xml", b"<head", b"<body"))
+            or (b"<html" in header_lower and b"%PDF-" not in header)
+        ):
+            return (
+                False,
+                "Downloaded file is an HTML webpage rather than a PDF (the publisher page may be paywalled or require institutional access)",
+                0,
+                {},
+            )
+
+        # PyMuPDF verification
+        try:
+            doc = fitz.open(str(file_path))
+        except Exception as e:
             if not is_valid_pdf_bytes(header):
                 return False, "Invalid PDF header signature (not a valid PDF)", 0, {}
+            return False, f"Corrupted or invalid PDF: {str(e)}", 0, {}
 
-        doc = fitz.open(str(file_path))
         page_count = len(doc)
         if page_count == 0:
             doc.close()
