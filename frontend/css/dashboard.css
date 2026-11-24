@@ -1,0 +1,350 @@
+/* PaperFetch V2 - Dashboard, Downloader, Library & Citation Styles */
+
+/* Metrics Grid */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.metric-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metric-title {
+  font-size: 13px;
+  color: var(--text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.metric-value {
+  font-size: 28px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: #fff;
+}
+
+.metric-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* Batch Downloader Input Area */
+.input-section {
+  margin-bottom: 32px;
+}
+
+.input-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.input-counter {
+  font-size: 13px;
+  color: var(--accent-cyan);
+  font-weight: 600;
+  background: rgba(6, 182, 212, 0.12);
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+}
+
+.url-textarea {
+  width: 100%;
+  min-height: 140px;
+  background: rgba(10, 14, 23, 0.8);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  color: var(--text-main);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  resize: vertical;
+  transition: var(--transition);
+}
+
+.url-textarea:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.input-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 14px;
+}
+
+.input-hints {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* Preview Cards */
+.preview-section {
+  margin-top: 32px;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18px;
+}
+
+.section-title {
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.preview-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.preview-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-left: 3px solid var(--accent-primary);
+}
+
+.preview-card.duplicate {
+  border-left-color: var(--accent-amber);
+}
+
+.preview-card.inaccessible {
+  border-left-color: var(--accent-rose);
+  opacity: 0.85;
+}
+
+.preview-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.preview-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  line-height: 1.4;
+}
+
+.preview-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.preview-meta span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.preview-abstract {
+  font-size: 13px;
+  color: var(--text-dim);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.preview-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.preview-tags {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.preview-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Live Download Cards */
+.download-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.download-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.progress-track {
+  width: 100%;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: var(--radius-full);
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent-primary), var(--accent-cyan));
+  border-radius: var(--radius-full);
+  width: 0%;
+  transition: width 0.25s linear;
+}
+
+.progress-fill.completed {
+  background: var(--accent-emerald);
+}
+
+.progress-fill.failed {
+  background: var(--accent-rose);
+}
+
+.download-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Library Controls & Table */
+.library-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+
+.search-box {
+  flex: 1;
+  min-width: 260px;
+  position: relative;
+}
+
+.search-input {
+  width: 100%;
+  background: rgba(10, 14, 23, 0.8);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px 10px 36px;
+  color: #fff;
+  font-size: 13px;
+  transition: var(--transition);
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+.search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-dim);
+}
+
+.filter-select {
+  background: rgba(10, 14, 23, 0.8);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-sm);
+  padding: 9px 14px;
+  color: var(--text-main);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+}
+
+/* Library Table */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.library-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  text-align: left;
+}
+
+.library-table th {
+  padding: 12px 16px;
+  color: var(--text-dim);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-glass);
+  text-transform: uppercase;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+}
+
+.library-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+}
+
+.library-table tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+  color: var(--text-main);
+}
+
+.paper-title-cell {
+  color: #fff;
+  font-weight: 500;
+  max-width: 380px;
+}
+
+/* BibTeX Code Viewer */
+.code-viewer {
+  background: #090d16;
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.6;
+  color: #38bdf8;
+  white-space: pre-wrap;
+  word-break: break-all;
+  overflow-x: auto;
+  max-height: 400px;
+}
