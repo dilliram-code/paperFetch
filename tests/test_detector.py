@@ -55,6 +55,10 @@ def test_extract_title_from_url():
     extracted = extract_title_from_url(rg_url)
     assert extracted == "Natural language processing state of the art current trends and challenges"
 
+    rg_download_url = "https://www.researchgate.net/publication/319164243_Natural_language_processing_state_of_the_art_current_trends_and_challenges/link/5ac0c514aca27222c75a72ad/download"
+    extracted_download = extract_title_from_url(rg_download_url)
+    assert extracted_download == "Natural language processing state of the art current trends and challenges"
+
     slug_url = "https://example.org/articles/survey-on-deep-learning-and-computer-vision"
     extracted_slug = extract_title_from_url(slug_url)
     assert extracted_slug == "survey on deep learning and computer vision"
