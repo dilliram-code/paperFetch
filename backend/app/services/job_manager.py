@@ -154,6 +154,37 @@ class JobManager:
                 cancel_event=cancel_event,
             )
 
+            # If primary download failed (e.g. 403 or HTML), attempt open-access mirror fallback
+            if not success and not (cancel_event and cancel_event.is_set()):
+                from backend.app.services.doi_resolver import resolve_doi
+                from backend.app.services.academic_sources import search_paper_by_title
+
+                alt_url = None
+                if paper.doi:
+                    doi_res = await resolve_doi(paper.doi)
+                    if doi_res and doi_res.get("pdf_url") and doi_res["pdf_url"] != paper.pdf_url:
+                        alt_url = doi_res["pdf_url"]
+
+                if not alt_url and paper.title:
+                    title_res = await search_paper_by_title(paper.title)
+                    if title_res and title_res.get("pdf_url") and title_res["pdf_url"] != paper.pdf_url:
+                        alt_url = title_res["pdf_url"]
+
+                if alt_url:
+                    logger.info(f"Primary download failed ({err}). Retrying with open-access mirror: {alt_url}")
+                    success, err, final_path, file_hash, file_size, page_count = await download_pdf_stream(
+                        url=alt_url,
+                        target_filename=paper.filename,
+                        progress_callback=on_progress,
+                        cancel_event=cancel_event,
+                    )
+                    if success:
+                        async with AsyncSessionLocal() as update_db:
+                            await update_db.execute(
+                                update(Paper).where(Paper.id == paper_id).values(pdf_url=alt_url)
+                            )
+                            await update_db.commit()
+
             async with AsyncSessionLocal() as db:
                 if success and final_path:
                     completed_at = datetime.utcnow()
