@@ -1,4 +1,4 @@
-# PaperFetch V2 — Intelligent Research Paper Downloader & Library Manager
+# PaperFetch V1 — Intelligent Research Paper Downloader & Library Manager
 
 PaperFetch V2 is an intelligent academic research productivity web application built with **FastAPI**, **Vanilla Modern JavaScript (ES6+)**, and **Server-Sent Events (SSE)**. It discovers, validates, downloads, organizes, and manages academic research papers in PDF format.
 
