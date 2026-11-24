@@ -8,7 +8,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from backend.app.config import settings
 from backend.app.models import Paper
-from backend.app.services.academic_sources import fetch_arxiv_metadata
+from backend.app.services.academic_sources import (
+    fetch_arxiv_metadata,
+    search_paper_by_title,
+)
 from backend.app.services.bibtex_generator import generate_bibtex_entry
 from backend.app.services.doi_resolver import resolve_doi
 from backend.app.services.duplicate_detector import (
@@ -135,7 +138,6 @@ async def detect_single_paper(raw_input: str, db: Optional[AsyncSession] = None)
 
             # Intelligent academic fallback if scraping was blocked (e.g. ResearchGate/Academia 403) or PDF was not found
             if not paper_data.get("pdf_url") or not paper_data.get("title") or paper_data.get("title") == "Untitled Paper":
-                from backend.app.services.academic_sources import search_paper_by_title
                 candidate_title = None
                 if paper_data.get("title") and paper_data.get("title") != "Untitled Paper":
                     candidate_title = paper_data.get("title")
