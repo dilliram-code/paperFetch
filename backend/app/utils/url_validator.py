@@ -64,6 +64,37 @@ def extract_arxiv_id(input_str: str) -> Optional[str]:
     return None
 
 
+def extract_title_from_url(url: str) -> Optional[str]:
+    """
+    Extract a potential paper title from an academic URL slug (e.g. ResearchGate, Academia).
+    Example:
+      https://www.researchgate.net/publication/319164243_Natural_language_processing_state_of_the_art_current_trends_and_challenges
+      -> 'Natural language processing state of the art current trends and challenges'
+    """
+    if not url:
+        return None
+    try:
+        from urllib.parse import unquote
+        parsed = urlparse(url)
+        path = unquote(parsed.path).strip("/")
+        parts = [p for p in path.split("/") if p]
+        if not parts:
+            return None
+        last = parts[-1]
+        # Remove leading ID numbers like 319164243_ or 12345-
+        last = re.sub(r"^\d+[\-_]", "", last)
+        # Remove common web extensions
+        last = re.sub(r"\.(html|htm|php|asp|aspx|pdf)$", "", last, flags=re.I)
+        # Convert separators to spaces
+        clean_title = re.sub(r"[\-_+]+", " ", last).strip()
+        # Only return if it resembles a multi-word paper title (at least 2 words and >= 12 chars)
+        if len(clean_title) >= 12 and " " in clean_title:
+            return clean_title
+        return None
+    except Exception:
+        return None
+
+
 def classify_input(input_str: str) -> Tuple[str, str]:
     """
     Classify input as 'doi', 'arxiv', 'direct_pdf', or 'webpage'.
