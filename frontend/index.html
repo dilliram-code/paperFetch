@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PaperFetch V2 — Intelligent Research Paper Downloader</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+  <link rel="stylesheet" href="/static/css/responsive.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">P</div>
+        <div>
+          <div class="brand-title">PaperFetch</div>
+          <span class="brand-tag">v2.0 Pro</span>
+        </div>
+      </div>
+
+      <ul class="nav-menu">
+        <li>
+          <a href="/" class="nav-link active">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+            Download Papers
+          </a>
+        </li>
+        <li>
+          <a href="/library" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            My Library
+          </a>
+        </li>
+        <li>
+          <a href="/history" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Download History
+          </a>
+        </li>
+        <li>
+          <a href="/citations" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"/></svg>
+            Citation Studio
+          </a>
+        </li>
+        <li>
+          <a href="/settings" class="nav-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+            Settings
+          </a>
+        </li>
+      </ul>
+
+      <div class="sidebar-footer">
+        <div class="system-status-indicator">
+          <span class="status-dot"></span>
+          <span>Engine: Operational</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-wrapper">
+      <header class="topbar">
+        <button class="mobile-nav-toggle" aria-label="Toggle navigation">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+        <h1 class="page-heading">Intelligent Paper Downloader</h1>
+        <div class="topbar-actions">
+          <a href="/api/downloads/zip" class="btn btn-secondary btn-sm" id="top-btn-zip">Download All ZIP</a>
+        </div>
+      </header>
+
+      <div class="content-body">
+        <!-- Overview Metrics -->
+        <div class="metrics-grid">
+          <div class="glass-panel metric-card">
+            <span class="metric-title">Library Collection</span>
+            <div class="metric-value" id="stat-total-papers">0</div>
+            <span class="metric-sub">Stored research papers</span>
+          </div>
+          <div class="glass-panel metric-card">
+            <span class="metric-title">Successful Downloads</span>
+            <div class="metric-value" style="color: var(--accent-emerald);" id="stat-completed">0</div>
+            <span class="metric-sub">Validated & organized</span>
+          </div>
+          <div class="glass-panel metric-card">
+            <span class="metric-title">Storage Footprint</span>
+            <div class="metric-value" style="color: var(--accent-cyan);" id="stat-storage">0 MB</div>
+            <span class="metric-sub">Standardized local storage</span>
+          </div>
+        </div>
+
+        <!-- Input Section -->
+        <div class="glass-panel input-section">
+          <div class="input-header">
+            <div>
+              <h2 style="font-size: 16px; font-weight: 600; color: #fff;">Batch Paper Input</h2>
+              <div style="font-size: 13px; color: var(--text-dim); margin-top: 2px;">
+                Paste DOI identifiers (e.g., <code>10.1038/s41586-023-06747-5</code>), direct PDF URLs, or academic webpage links.
+              </div>
+            </div>
+            <span class="input-counter" id="input-counter">0 / 10 papers</span>
+          </div>
+
+          <textarea 
+            class="url-textarea" 
+            id="url-input" 
+            placeholder="Paste up to 10 URLs or DOIs, one per line:&#10;https://arxiv.org/abs/2301.12345&#10;10.1038/s41586-023-06747-5&#10;https://example.com/research-paper.pdf"
+          ></textarea>
+
+          <div class="input-actions">
+            <div class="input-hints">
+              SSRF protected &bull; Automatic Crossref/OpenAlex/Unpaywall resolution &bull; PyMuPDF verification
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-secondary" id="btn-clear">Clear Input</button>
+              <button class="btn btn-primary" id="btn-detect">Detect &amp; Preview</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview Section -->
+        <div class="preview-section" id="preview-section" style="display: none;">
+          <div class="section-header">
+            <div class="section-title">
+              <span>Metadata Preview Stage</span>
+              <span style="font-size: 13px; color: var(--text-muted); font-weight: normal;">(Inspect, verify, and select papers before starting downloads)</span>
+            </div>
+            <button class="btn btn-primary" id="btn-start-download">Confirm &amp; Download Selected</button>
+          </div>
+
+          <div class="preview-grid" id="preview-list">
+            <!-- Dynamic Preview Cards inserted here -->
+          </div>
+        </div>
+
+        <!-- Real-time Download Dashboard -->
+        <div class="preview-section" id="download-dashboard" style="margin-top: 36px;">
+          <div class="section-header">
+            <div class="section-title">
+              <span>Active Download Engine</span>
+              <span class="badge badge-info" id="live-indicator">SSE Connected</span>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button class="btn btn-danger btn-sm" id="btn-cancel-all">Cancel All</button>
+              <button class="btn btn-secondary btn-sm" id="btn-download-zip">Download Batch ZIP</button>
+            </div>
+          </div>
+
+          <div id="active-downloads-list">
+            <!-- Download Cards rendered here via SSE -->
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Edit Metadata Modal -->
+  <div class="modal-overlay" id="edit-modal">
+    <div class="modal-card">
+      <h3 style="font-size: 18px; font-weight: 600; color: #fff; margin-bottom: 16px;">Edit Paper Metadata</h3>
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div>
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Paper Title</label>
+          <input type="text" id="edit-title" class="search-input" style="padding-left: 12px;">
+        </div>
+        <div>
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Authors (comma-separated)</label>
+          <input type="text" id="edit-authors" class="search-input" style="padding-left: 12px;">
+        </div>
+        <div style="display: flex; gap: 12px;">
+          <div style="flex: 1;">
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Year</label>
+            <input type="number" id="edit-year" class="search-input" style="padding-left: 12px;">
+          </div>
+          <div style="flex: 2;">
+            <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">DOI</label>
+            <input type="text" id="edit-doi" class="search-input" style="padding-left: 12px;">
+          </div>
+        </div>
+        <div>
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">Journal / Conference / Publisher</label>
+          <input type="text" id="edit-venue" class="search-input" style="padding-left: 12px;">
+        </div>
+        <div>
+          <label style="font-size: 12px; color: var(--text-muted); display: block; margin-bottom: 4px;">PDF Direct URL</label>
+          <input type="text" id="edit-pdf-url" class="search-input" style="padding-left: 12px;">
+        </div>
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
+        <button class="btn btn-secondary" onclick="closeEditModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="saveMetadataEdits()">Save &amp; Update</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/api.js"></script>
+  <script src="/static/js/app.js"></script>
+  <script src="/static/js/detector.js"></script>
+  <script src="/static/js/progress.js"></script>
+  <script>
+    // Load initial stats
+    API.getStats().then(stats => {
+      document.getElementById('stat-total-papers').textContent = stats.total_papers;
+      document.getElementById('stat-completed').textContent = stats.completed_downloads;
+      document.getElementById('stat-storage').textContent = `${stats.storage_used_mb} MB`;
+    }).catch(() => {});
+  </script>
+</body>
+</html>
