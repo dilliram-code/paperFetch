@@ -270,6 +270,10 @@ class JobManager:
                 paper_id=paper.id,
                 status="waiting",
                 progress_percent=0.0,
+                downloaded_bytes=0,
+                total_bytes=0,
+                speed_bytes_per_sec=0.0,
+                eta_seconds=0.0,
             )
             db.add(new_job)
 

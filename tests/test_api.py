@@ -66,6 +66,45 @@ async def test_settings_get_and_patch():
 
 
 @pytest.mark.asyncio
+async def test_create_download_jobs_api(monkeypatch):
+    from backend.app.models import DownloadJob
+    from backend.app.services.job_manager import job_manager
+
+    # Avoid spawning real background downloader in unit test
+    async def noop_run_task(job_id, paper_id):
+        pass
+    monkeypatch.setattr(job_manager, "run_download_task", noop_run_task)
+
+    # Test to_dict on job with None fields
+    job_empty = DownloadJob(id="test-job-empty")
+    d = job_empty.to_dict()
+    assert d["speed_bytes_per_sec"] == 0.0
+    assert d["eta_seconds"] == 0.0
+    assert d["progress_percent"] == 0.0
+
+    # Test POST /api/jobs with a real paper
+    test_pid = f"paper-job-test-{uuid.uuid4().hex[:8]}"
+    paper = Paper(
+        id=test_pid,
+        title="Test Job Creation Paper",
+        pdf_url="https://example.com/test.pdf",
+        status="awaiting_confirmation",
+    )
+    async with AsyncSessionLocal() as db:
+        db.add(paper)
+        await db.commit()
+
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+        res = await ac.post("/api/jobs", json={"paper_ids": [test_pid]})
+        assert res.status_code == 200
+        data = res.json()
+        assert len(data) == 1
+        assert data[0]["paper_id"] == test_pid
+        assert data[0]["status"] == "waiting"
+        assert data[0]["speed_bytes_per_sec"] == 0.0
+
+
+@pytest.mark.asyncio
 async def test_downloads_zip_batch_filtering(tmp_path):
     # Setup two completed papers with mock PDFs
     pdf1 = tmp_path / "paper_prev.pdf"

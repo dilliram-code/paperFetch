@@ -32,6 +32,8 @@ env/
 
 # Databases & Storage
 *.db
+*.db-shm
+*.db-wal
 *.sqlite3
 storage/downloads/*
 !storage/downloads/.gitkeep
