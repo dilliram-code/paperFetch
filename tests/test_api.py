@@ -73,15 +73,18 @@ async def test_downloads_zip_batch_filtering(tmp_path):
     pdf2 = tmp_path / "paper_current.pdf"
     pdf2.write_bytes(b"%PDF-1.4\n1 0 obj\n<<>>\nendobj\ntrailer\n<<>>\n%%EOF")
 
+    p1_id = f"prev-{uuid.uuid4().hex[:8]}"
+    p2_id = f"curr-{uuid.uuid4().hex[:8]}"
+
     p1 = Paper(
-        id="p-previous-batch",
+        id=p1_id,
         title="Previously Downloaded Paper",
         filename="prev_paper.pdf",
         local_path=str(pdf1),
         status="completed",
     )
     p2 = Paper(
-        id="p-current-batch",
+        id=p2_id,
         title="Current Batch Paper",
         filename="current_paper.pdf",
         local_path=str(pdf2),
@@ -93,8 +96,8 @@ async def test_downloads_zip_batch_filtering(tmp_path):
         await db.commit()
 
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
-        # 1. Download ZIP filtering ONLY p-current-batch
-        res = await ac.get("/api/downloads/zip?paper_ids=p-current-batch")
+        # 1. Download ZIP filtering ONLY p2_id (current batch)
+        res = await ac.get(f"/api/downloads/zip?paper_ids={p2_id}")
         assert res.status_code == 200
         assert res.headers["content-type"] == "application/zip"
         
@@ -105,7 +108,7 @@ async def test_downloads_zip_batch_filtering(tmp_path):
             assert "prev_paper.pdf" not in file_names
 
         # 2. Comma-separated query param test
-        res_both = await ac.get("/api/downloads/zip?paper_ids=p-previous-batch,p-current-batch")
+        res_both = await ac.get(f"/api/downloads/zip?paper_ids={p1_id},{p2_id}")
         assert res_both.status_code == 200
         with zipfile.ZipFile(io.BytesIO(res_both.content)) as zf:
             names = zf.namelist()

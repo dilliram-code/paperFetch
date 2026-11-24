@@ -65,6 +65,7 @@ async def test_download_pdf_stream_hashing_and_speed(monkeypatch, tmp_path):
         def stream(self, method, url, headers=None):
             return MockStreamResponse()
 
+    monkeypatch.setattr("backend.app.services.downloader.validate_target_url", lambda u: None)
     monkeypatch.setattr("backend.app.services.downloader.get_download_client", lambda: MockClient())
 
     progress_events = []
