@@ -29,10 +29,10 @@ class Settings(BaseSettings):
 
     # Engine Limits
     MAX_BATCH_SIZE: int = 10
-    MAX_CONCURRENT_DOWNLOADS: int = 5
+    MAX_CONCURRENT_DOWNLOADS: int = 10
     DOWNLOAD_TIMEOUT_SECONDS: int = 60
     MAX_FILE_SIZE_MB: int = 200
-    CHUNK_SIZE_BYTES: int = 65536  # 64 KB
+    CHUNK_SIZE_BYTES: int = 262144  # 256 KB high-speed streaming buffer
 
     # Default Preferences
     DEFAULT_FILENAME_PATTERN: str = "{year}_{first_author}_{title}"

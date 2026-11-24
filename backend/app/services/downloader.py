@@ -16,6 +16,29 @@ from backend.app.utils.security import safe_resolve_path, validate_target_url
 
 logger = logging.getLogger(__name__)
 
+_download_client: Optional[httpx.AsyncClient] = None
+
+
+def get_download_client() -> httpx.AsyncClient:
+    """Singleton high-performance HTTP client with connection pooling and HTTP/2."""
+    global _download_client
+    if _download_client is None or _download_client.is_closed:
+        _download_client = httpx.AsyncClient(
+            timeout=httpx.Timeout(settings.DOWNLOAD_TIMEOUT_SECONDS, connect=10.0, read=settings.DOWNLOAD_TIMEOUT_SECONDS),
+            follow_redirects=True,
+            limits=httpx.Limits(max_keepalive_connections=20, max_connections=50, keepalive_expiry=60.0),
+            http2=True,
+        )
+    return _download_client
+
+
+async def close_download_client() -> None:
+    """Close the singleton HTTP client."""
+    global _download_client
+    if _download_client is not None and not _download_client.is_closed:
+        await _download_client.aclose()
+        _download_client = None
+
 
 async def download_pdf_stream(
     url: str,
