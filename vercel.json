@@ -1,0 +1,35 @@
+{
+  "version": 2,
+  "public": true,
+  "cleanUrls": true,
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "https://paperfetch.onrender.com/api/$1"
+    },
+    {
+      "source": "/library",
+      "destination": "/frontend/library.html"
+    },
+    {
+      "source": "/history",
+      "destination": "/frontend/history.html"
+    },
+    {
+      "source": "/citations",
+      "destination": "/frontend/citations.html"
+    },
+    {
+      "source": "/settings",
+      "destination": "/frontend/settings.html"
+    },
+    {
+      "source": "/static/(.*)",
+      "destination": "/frontend/$1"
+    },
+    {
+      "source": "/",
+      "destination": "/frontend/index.html"
+    }
+  ]
+}

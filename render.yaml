@@ -1,0 +1,25 @@
+services:
+  - type: web
+    name: paperfetch
+    env: python
+    region: oregon
+    plan: starter
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: ENVIRONMENT
+        value: production
+      - key: UNPAYWALL_EMAIL
+        value: researcher@paperfetch.app
+      - key: CROSSREF_MAILTO
+        value: researcher@paperfetch.app
+      - key: MAX_BATCH_SIZE
+        value: 10
+      - key: MAX_CONCURRENT_DOWNLOADS
+        value: 5
+    disk:
+      name: paperfetch-storage
+      mountPath: /opt/render/project/src/storage
+      sizeGB: 10
