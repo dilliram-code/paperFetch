@@ -10,6 +10,7 @@ from backend.app.utils.url_validator import (
     classify_input,
     extract_arxiv_id,
     extract_doi,
+    extract_title_from_url,
 )
 
 
@@ -47,6 +48,19 @@ def test_extract_surname():
     assert extract_surname("Smith, John") == "Smith"
     assert extract_surname("Alice B. Johnson") == "Johnson"
     assert extract_surname("") == "Unknown"
+
+
+def test_extract_title_from_url():
+    rg_url = "https://www.researchgate.net/publication/319164243_Natural_language_processing_state_of_the_art_current_trends_and_challenges"
+    extracted = extract_title_from_url(rg_url)
+    assert extracted == "Natural language processing state of the art current trends and challenges"
+
+    slug_url = "https://example.org/articles/survey-on-deep-learning-and-computer-vision"
+    extracted_slug = extract_title_from_url(slug_url)
+    assert extracted_slug == "survey on deep learning and computer vision"
+
+    short_url = "https://example.com/index.html"
+    assert extract_title_from_url(short_url) is None
 
 
 def test_clean_title_slug():
